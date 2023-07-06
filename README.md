@@ -18,6 +18,9 @@ Prettier - Code formatter
 React Extension Pack
 Reactjs code snippets
 Auto Rename Tag
+Tailwind Css intelesense for tailwind
+Tailwind Fold for tailwind class short
+CodeSnap
 ```
 
 ## রিডাক্স কিভাবে কাজ করে
@@ -75,6 +78,9 @@ prdictable
 ## রিডাক্সের alternative way আছে ?
   আছে , movex । 
 ## রিডাক্স ভিতরে কীভাবে কাজ কবে ?
+![Alt text](<Screenshot 2023-07-06 190526.png>)
+
+
   এটাকে আমবা পাচভাগে ভাগ করি 
   এটা একটা ফ্লো
 1. Action
@@ -243,6 +249,7 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
 ```
 ## setup redux store
 #[download redux tookit](#create-redux-and-react-and-vite-project)
+![Alt text](<Screenshot 2023-07-06 001537.png>)
 
 1 . Redux tookit
     এটাকে আমরা চারটা পয়েন্ট ভাগ করি 
