@@ -1,8 +1,11 @@
 # Logs
+<<<<<<< HEAD
 
 node_modules
 env
 
+=======
+>>>>>>> 9c3d9851ec8058ab08b327f161bea1cf075609bb
 logs
 *.log
 npm-debug.log*
