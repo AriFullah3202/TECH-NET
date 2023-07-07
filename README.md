@@ -3,7 +3,9 @@
 #[Create React and Redux project](#create-redux-and-react-project)
 #[রিয়েক্ট রিডাক্সের সাথে কানেক্ট করা ](#রিয়েক্ট-রিডাক্সের-সাথে-কানেক্ট-করা)
 #[সেটআপ প্রথম slice](#setup-first-slice)
-
+#[typeScript best practice and devtools](#typescript-best-practice-and-devtool)
+#[use custom hook for best practice](#create-hook-for-best-practice)
+#[middleware and custom middleware](#middleware-and-custom-middleware-in-redux)
 
 
 ## important extention for vs code
@@ -109,7 +111,8 @@ npm install react-router-dom
 npm i colors
 npm install react-redux
 npm install @reduxjs/toolkit
-
+npm i --save-dev @types/redux-logger
+npm i redux-logger
 // to run
 npm run dev
 ```
@@ -367,3 +370,133 @@ function App() {
 export default App
 
 ```
+## typeScript best practice and devtool
+* redux 
+  * Counter
+    * counterSlice
+```js
+type CountState = {
+  count: number;
+};
+const initialState: CountState = {
+  count: 8,
+};
+```
+## create hook for best practice
+* redux
+  * hooks.tsx
+ইউজ কাস্টম useDispatch , useSelector এতদিন এগুলো ইউজ করতাম । 
+এখন নিজেরা বানাব । 
+```js
+import { useDispatch, useSelector } from 'react-redux'
+import type { TypedUseSelectorHook } from 'react-redux'
+import type { RootState, AppDispatch } from './store'
+
+// Use throughout your app instead of plain `useDispatch` and `useSelector`
+export const useAppDispatch: () => AppDispatch = useDispatch
+export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector
+```
+এ্খানে কাস্টমহোক ইউজ করা হয়েছে । 
+```js
+
+import { decrement, increment, incrementByAmount } from "./redux/feature/counter/counterSlice"
+import { useAppDispatch, useAppSelector } from "./redux/hooks"
+
+
+function App() {
+    const {count} = useAppSelector((state ) => state.counter)
+    const dispatch = useAppDispatch()
+    return (
+        <div>
+            <div className="flex gap-6">
+              <button className="border-2 border-green-500 rounded-md px-2 py-4"  onClick={() => dispatch(increment())}>Increment</button>
+             <button className="border-2 border-green-500 rounded-md px-2 py-4"  onClick={() => dispatch(incrementByAmount(4))}>Increment</button>
+              <div>{count}</div>
+              <button className="border-2 border-red-500 rounded-md px-2 py-3"  onClick={() => dispatch(decrement())}>Decrement</button>
+            </div>
+        </div>
+    )
+}
+
+export default App
+
+```
+আমরা যদি ডেপটুল ইউজ করতে না চাই devTools : false দিতে হবে , এটা ডিফল্টভাবে সত্য থাকে 
+```js
+import { configureStore } from '@reduxjs/toolkit'
+import counterSlice from './feature/counter/counterSlice'
+
+export const store = configureStore({
+  reducer: {
+    counter : counterSlice
+  },
+  devTools : true
+})
+// Infer the `RootState` and `AppDispatch` types from the store itself
+export type RootState = ReturnType<typeof store.getState>
+// Inferred type: {posts: PostsState, comments: CommentsState, users: UsersState}
+export type AppDispatch = typeof store.dispatch
+```
+## Middleware and custom middleware in redux
+#[install logger for middleware](#create-redux-and-react-and-vite-project)
+
+middleware এটা কোন স্টেট execute হওয়ার আগে কিছু করতে চাই 
+
+concat(logger) এটা হল রিডাক্সের মিডলওয়ারের সাথে যুক্ত করা 
+
+```js
+import { configureStore } from '@reduxjs/toolkit'
+import counterSlice from './feature/counter/counterSlice'
+import logger from 'redux-logger'
+
+export const store = configureStore({
+  reducer: {
+    counter : counterSlice
+  },
+  middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(logger),
+})
+// Infer the `RootState` and `AppDispatch` types from the store itself
+export type RootState = ReturnType<typeof store.getState>
+// Inferred type: {posts: PostsState, comments: CommentsState, users: UsersState}
+export type AppDispatch = typeof store.dispatch
+```
+এখন যদি আমরা কাস্টম মিডলওয়ার করতে চাই তাহলে 
+* redux
+  * middleware
+    * logger.tsx
+একটা middleware করতে হবে , store , next , action এই সিকুয়েন্নে দিতে হবে । তারপর export করতে হবে ।
+```js
+import { Middleware } from "@reduxjs/toolkit"
+
+const logger : Middleware= (store) => (next) => (action) => {
+    console.log("current state " , store.getState())
+    console.log("action", action)
+
+    next(action)
+    console.log("Updated state " , store.getState)
+}
+export default logger
+
+```
+* redux
+  * store.tsx
+উপরের logger কে ইম্পোর্ট করতে হবে ।
+```js
+import { configureStore } from '@reduxjs/toolkit'
+import counterSlice from './feature/counter/counterSlice'
+import logger from './middleware/logger'
+
+
+export const store = configureStore({
+  reducer: {
+    counter : counterSlice
+  },
+  middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(logger),
+})
+// Infer the `RootState` and `AppDispatch` types from the store itself
+export type RootState = ReturnType<typeof store.getState>
+// Inferred type: {posts: PostsState, comments: CommentsState, users: UsersState}
+export type AppDispatch = typeof store.dispatch
+
+```
+
