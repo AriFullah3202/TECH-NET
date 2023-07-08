@@ -6,6 +6,7 @@
 #[typeScript best practice and devtools](#typescript-best-practice-and-devtool)
 #[use custom hook for best practice](#create-hook-for-best-practice)
 #[middleware and custom middleware](#middleware-and-custom-middleware-in-redux)
+#[product add in cart minus from cart and remove from cart](#product-add-cart-and-minus-cart--remove-product-form-cart)
 
 
 ## important extention for vs code
@@ -23,6 +24,7 @@ Auto Rename Tag
 Tailwind Css intelesense for tailwind
 Tailwind Fold for tailwind class short
 CodeSnap
+Better comment //!eta commment highlicght kore
 ```
 
 ## রিডাক্স কিভাবে কাজ করে
@@ -278,6 +280,9 @@ export const store = configureStore({
   },
 })
 // Infer the `RootState` and `AppDispatch` types from the store itself
+এগুলো হচ্ছে টাইপস্ক্রিপ্ট এর জিনিস যাতে ইরর না দেয় । 
+এথানে টাইপ বলা আছে এবং রিটান কি হবে এটা বলা আছে ।
+store.getState and store.dispatch হচ্চে old reudux এর আমরা এখন tookit ব্যবহার করছি 
 export type RootState = ReturnType<typeof store.getState>
 // Inferred type: {posts: PostsState, comments: CommentsState, users: UsersState}
 export type AppDispatch = typeof store.dispatch
@@ -289,6 +294,21 @@ export type AppDispatch = typeof store.dispatch
   * main.tsx 
 Provider ইউজ করতে হবে । যেটা react রিডাক্সের । জাস্ট এটা context api এর মতো আমরা গ্লোবালভাবে রাখব ।
 ```js
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import './index.css';
+import { RouterProvider } from 'react-router-dom';
+import routes from './routes/routes.tsx';
+import { Provider } from 'react-redux';
+import { store } from './redux/store.tsx';
+
+ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
+  <React.StrictMode>
+    <Provider store = {store}>
+    <RouterProvider router={routes} />
+    </Provider>
+  </React.StrictMode>
+);
 
 ```
 ## setup first slice
@@ -337,6 +357,9 @@ export const store = configureStore({
   },
 })
 // Infer the `RootState` and `AppDispatch` types from the store itself
+এগুলো হচ্ছে টাইপস্ক্রিপ্ট এর জিনিস যাতে ইরর না দেয় । 
+এথানে টাইপ বলা আছে এবং রিটান কি হবে এটা বলা আছে ।
+store.getState and store.dispatch হচ্চে old reudux এর আমরা এখন tookit ব্যবহার করছি 
 export type RootState = ReturnType<typeof store.getState>
 // Inferred type: {posts: PostsState, comments: CommentsState, users: UsersState}
 export type AppDispatch = typeof store.dispatch
@@ -353,8 +376,9 @@ import { decrement, increment, incrementByAmount } from "./redux/feature/counter
 
 
 function App() {
+    //এগুলো রিডাক্সের বানানো হোক আমরা সরাসরি ইউজ করি 
     const {count} = useSelector((state : RootState) => state.counter)
-    const dispatch = useDispatch()
+      const dispatch = useDispatch()
     return (
         <div>
             <div className="flex gap-6">
@@ -370,6 +394,11 @@ function App() {
 export default App
 
 ```
+উপরে 
+ এটা স্টৌর থেকে কল করে ডাটা নিয়ে আসা যেমন : count = value
+ const {count} = useSelector((state : RootState) => state.counter)
+ //এখানে funciton এঋশনকে কল করা 
+ const dispatch = useDispatch()
 ## typeScript best practice and devtool
 * redux 
   * Counter
@@ -386,7 +415,8 @@ const initialState: CountState = {
 * redux
   * hooks.tsx
 ইউজ কাস্টম useDispatch , useSelector এতদিন এগুলো ইউজ করতাম । 
-এখন নিজেরা বানাব । 
+এখন নিজেরা বানাব ।
+useSelector এর মাধ্যমে আমরা স্টোর থেকে কল করে নিয়ে আসি । 
 ```js
 import { useDispatch, useSelector } from 'react-redux'
 import type { TypedUseSelectorHook } from 'react-redux'
@@ -404,6 +434,10 @@ import { useAppDispatch, useAppSelector } from "./redux/hooks"
 
 
 function App() {
+  //এগুলো রিডাক্সের বানানো হোক আমরা সরাসরি ইউজ করতাম
+    const {count} = useSelector((state : RootState) => state.counter)
+      const dispatch = useDispatch()
+  // এখন আমরা আমাদের কাস্টম হুক ব্যবহার করছি ।
     const {count} = useAppSelector((state ) => state.counter)
     const dispatch = useAppDispatch()
     return (
@@ -433,6 +467,9 @@ export const store = configureStore({
   devTools : true
 })
 // Infer the `RootState` and `AppDispatch` types from the store itself
+এগুলো হচ্ছে টাইপস্ক্রিপ্ট এর জিনিস যাতে ইরর না দেয় । 
+এথানে টাইপ বলা আছে এবং রিটান কি হবে এটা বলা আছে ।
+store.getState and store.dispatch হচ্চে old reudux এর আমরা এখন tookit ব্যবহার করছি 
 export type RootState = ReturnType<typeof store.getState>
 // Inferred type: {posts: PostsState, comments: CommentsState, users: UsersState}
 export type AppDispatch = typeof store.dispatch
@@ -499,4 +536,16 @@ export type RootState = ReturnType<typeof store.getState>
 export type AppDispatch = typeof store.dispatch
 
 ```
+# product add cart and minus cart , remove product form cart
+
+
+
+
+
+
+
+
+
+
+
 
