@@ -7,6 +7,7 @@
 #[use custom hook for best practice](#create-hook-for-best-practice)
 #[middleware and custom middleware](#middleware-and-custom-middleware-in-redux)
 #[product add in cart minus from cart and remove from cart](#product-add-cart-and-minus-cart--remove-product-form-cart)
+#[methodolozy of RTK query](#methodolozy-of-rtk-query)
 
 
 ## important extention for vs code
@@ -537,7 +538,209 @@ export type AppDispatch = typeof store.dispatch
 
 ```
 # product add cart and minus cart , remove product form cart
+* src 
+  * redux
+    * feature
+      * cart
+        * cartslice.tsx
+* in Cart.tsx
+```js
+export default function Checkout() {
+  const [scheduled, setScheduled] = useState<boolean>(false);
+  const  { products , total} = useAppSelector((state)=> state.cart) 
 
+  
+
+  return (
+  <div className="border-l pl-5 flex flex-col justify-between">
+                <Button onClick={() => dispatch(addToCart(product))}>
+                  <HiOutlinePlus size="20" />
+                </Button>
+                <Button onClick={() => dispatch(removeOne(product))}>
+                  <HiMinus size="20" />
+                </Button>
+                <Button
+                  variant="destructive"
+                  className="bg-red-500 hover:bg-red-400"
+                 onClick={() => dispatch(removeFromCart(product))}>
+                  <HiOutlineTrash size="20" />
+                </Button>
+              </div>
+  )
+```
+
+```js
+import { PayloadAction } from '@reduxjs/toolkit';
+import { IProduct } from '@/types/globalTypes';
+import { createSlice } from '@reduxjs/toolkit';
+
+interface ICart {
+  products: IProduct[];
+  total: number;
+}
+
+//এটা ইনিশিয়ালি ফাকা Array দিয়েছি ।
+const initialState: ICart = {
+  products: [],
+  total: 0,
+};
+
+const cartSlice = createSlice({
+  name: 'cart',
+  initialState,
+  reducers: {
+    addToCart: (state, action: PayloadAction<IProduct>) => {
+      const exiting = state.products.find(
+        (product) => product._id === action.payload._id
+      );
+      if (exiting) {
+        //! যদি ডাটা থাকে তাহলে ‍ ১ করে বাড়াবো ।
+        exiting.quantity = exiting.quantity! + 1;
+      } else {
+        state.products.push({ ...action.payload, quantity: 1 });
+      }
+      state.total += action.payload.price;
+    },
+    removeOne: (state, action: PayloadAction<IProduct>) => {
+      const exiting = state.products.find(
+        (product) => product._id === action.payload._id
+      );
+      if (exiting && exiting.quantity! > 1) {
+        //! যদি ডাটা থাকে তাহলে ‍ ১ করে বাড়াবো ।
+        exiting.quantity = exiting.quantity! - 1;
+      } else {
+        state.products = state.products.filter(
+          (product) => product._id !== action.payload._id
+        );
+      }
+      state.total -= action.payload.price;
+    },
+    removeFromCart: (state, action: PayloadAction<IProduct>) => {
+      state.products = state.products.filter(
+        (product) => product._id !== action.payload._id
+      );
+      state.total -= action.payload.price * action.payload.quantity!;
+    },
+  },
+});
+export const { addToCart, removeFromCart, removeOne } = cartSlice.actions;
+export default cartSlice.reducer;
+```
+
+
+```js
+import { configureStore } from '@reduxjs/toolkit'
+import logger from './middleware/logger'
+import cartReducer from './feature/cart/cartSlice'
+
+
+export const store = configureStore({
+  reducer: {
+    cart : cartReducer
+  },
+  middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(logger),
+})
+// Infer the `RootState` and `AppDispatch` types from the store itself
+export type RootState = ReturnType<typeof store.getState>
+// Inferred type: {posts: PostsState, comments: CommentsState, users: UsersState}
+export type AppDispatch = typeof store.dispatch
+
+```
+## Product filter and toggle using redux
+
+* src 
+  * redux
+    * feature
+      * product
+        * productSlice.tsx
+### filter range and togle এর জন্য সেলাস তৈরি করা হয়েছে । 
+```js
+import { PayloadAction, createSlice } from "@reduxjs/toolkit"
+
+interface IProduct {
+ status : boolean,
+ priceRange : number
+}
+const initialState : IProduct = {
+  status : false,
+  priceRange : 150
+}
+const productSlice = createSlice({
+    name : "product" ,
+    initialState,
+    reducers : {
+        toggleState : (state) => {
+            state.status = !state.status
+        },
+        setPriceRange : (state , action : PayloadAction<number>) => {
+            state.priceRange = action.payload;
+        }
+    }
+})
+export const {toggleState , setPriceRange} = productSlice.actions
+
+export default productSlice.reducer
+
+```
+* page
+  * prduct.tsx
+আমরা শুধুমাত্র এইগুলো পরিবতন করেছি
+```js
+  const { toast } = useToast();
+  const {priceRange , status} = useAppSelector((state) => state.product)
+  const dispatch = useAppDispatch();
+
+  const handleSlider = (value: number[]) => {
+    dispatch(setPriceRange(value[0]))
+  };
+
+  let productsData;
+
+  if (status) {
+    productsData = data.filter(
+      (item) => item.status === true && item.price < priceRange
+    );
+  } else if (priceRange > 0) {
+    productsData = data.filter((item) => item.price < priceRange);
+  } else {
+    productsData = data;
+  }
+```
+## Methodolozy of RTK query
+### RTK query কি?
+#### ব্যকএন্ডের ডাটার সাথে ফ্রন্ডএন্ডের ডাটার সাথে maintain টা RTK Query কাজ ।
+* src
+  * redux
+    * api
+      * apiSlice.ts
+```js
+import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+
+export const api = createApi({
+  reducerPath: 'api',
+  baseQuery: fetchBaseQuery({ baseUrl: 'http://localhost:5000' }),
+  endpoints: (builder) => ({
+    getProducts: builder.query({
+      query: () => '/products',
+    }),
+    singleProduct: builder.query({
+      query: (id) => `/product/${id}`,
+    }),
+  }),
+});
+export const { useGetProductsQuery, useSingleProductQuery } = api;
+
+
+```
+#### এখানে উপরের হোক ইউজ করে ডাটা আনা হয়েছে ।
+```js
+  const {data , isLoading , error} = useGetProductsQuery(undefined)
+```
+#### এখানে উপরের হোক ইউজ করে ডাটা আনা হয়েছে ।
+
+```js
+ const {data : product , isLoading , error} = useSingleProductQuery(id)
+```
 
 
 
