@@ -8,6 +8,10 @@
 #[middleware and custom middleware](#middleware-and-custom-middleware-in-redux)
 #[product add in cart minus from cart and remove from cart](#product-add-cart-and-minus-cart--remove-product-form-cart)
 #[methodolozy of RTK query](#methodolozy-of-rtk-query)
+#[Redux Cache validation](#cache-validation)
+#[Redux Refatching using Mount or arg change polling and code spliting](#redux-refatching-using-mount-or-arg-change-polling-and-code-spliting)
+#[Firebase installl and setup](#firebase-install-and-setups)
+
 
 
 ## important extention for vs code
@@ -116,6 +120,7 @@ npm install react-redux
 npm install @reduxjs/toolkit
 npm i --save-dev @types/redux-logger
 npm i redux-logger
+npm install firebase
 // to run
 npm run dev
 ```
@@ -741,6 +746,235 @@ export const { useGetProductsQuery, useSingleProductQuery } = api;
 ```js
  const {data : product , isLoading , error} = useSingleProductQuery(id)
 ```
+## Post object using react toolkit mutation 
+mutaion হচ্চে post এর মতোন , এটা RTK এর ভাষায় mutaion বলে । 
+
+
+#### কিভাবে আমরা mutaion বানাব । 
+* src 
+  * redux
+    * api
+      * apiSlice.tsx
+```js
+  postComment: builder.mutation({
+      query: ({ id, data }) => ({
+        url: `/comment/${id}`,
+        method: `POST`,
+        body: data,
+      }),
+    }),
+    export const {
+  useGetProductsQuery,
+  useSingleProductQuery,
+  usePostCommentMutation,
+} = api;
+
+```
+#### সাধারণত GET ক্ষেত্রে RTK query এর hook কে কল করতে হয় , এবং তিনটা জিনিস রির্টান করতো ।
+#### const {data , isLoading , error} = useGetProductsQuery(undefined)
+#### যেহেতু এটা পোস্ট কমেন্টের জন্য কল করা হচ্ছে ।
+####  const [postComment , {isLoading , error , isSuccess}] = usePostCommentMutation();
+#### usePostCommentMutaion হচ্ছে hook , একটা function রির্টান করবে এবং একটা object রিটার্ন করবে  । 
+
+
+
+```js
+  const option = {
+      id : id,
+      // এখানে আমরা prostman যেভাবে পাঠাব সেভাবে data এর মধ্যে পাঠাতে হবে ।
+      data : { comment : inputValue }
+ }
+
+```
+
+এখানে কল করতে হবে । 
+
+যেটাকে আমরা post বলি সেটাকে RTK এর ভাষায় mutation বলি 
+    
+
+```js
+
+  const [inputValue, setInputValue] = useState<string>('');
+  console.log(inputValue);
+  // সাধারণত GET ক্ষেত্রে RTK query এর hook কে কল করতে হয় , এবং তিনটা জিনিস রির্টান করতো । 
+  //  const {data , isLoading , error} = useGetProductsQuery(undefined)
+  // যেহেতু এটা পোস্ট কমেন্টের জন্য কল করা হচ্ছে । 
+  // usePostCommentMutaion হচ্ছে hook , এটা রির্টান করবে  । 
+  const [postComment , {isLoading , error , isSuccess}] = usePostCommentMutation();
+
+  console.log(isLoading)
+ console.log(error)
+ console.log(isSuccess)
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const option = {
+      id : id,
+      data : { comment : inputValue }
+    }
+    // এখানে কল করতে হবে । 
+    //যেটাকে আমরা post বলি সেটাকে RTK এর ভাষায় mutation বলি । 
+    postComment(option)
+    setInputValue('');
+  };
+
+  const handleChange = (event: ChangeEvent<HTMLTextAreaElement>) => {
+    setInputValue(event.target.value);
+  };
+```
+## Redux Cache Validation 
+#### যখন আমরা comment এর ক্ষেত্রে post করব ।
+#### সাথে সাথে ঔই comment টা page দেখাচ্ছে না , কারণ react একবার লোড হয়ে cache করে রাখে । 
+#### যদি আমরা mongodb তে manually comment করি তাহলে ও এটা দেখাবে না 
+#### যখন আমরা পেইজ reload দিব তাহলে আসবে । 
+
+```js
+import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+
+export const api = createApi({
+  reducerPath: 'api',
+  baseQuery: fetchBaseQuery({ baseUrl: 'http://localhost:5000' }),
+  tagTypes: ['comments'],
+  endpoints: (builder) => ({
+    getProducts: builder.query({
+      query: () => '/products',
+    }),
+    singleProduct: builder.query({
+      query: (id) => `/product/${id}`,
+    }),
+    getComment: builder.query({
+      query: (id) => `/comment/${id}`,
+      providesTags: ['comments'],
+    }),
+    postComment: builder.mutation({
+      query: ({ id, data }) => ({
+        url: `/comment/${id}`,
+        method: `POST`,
+        body: data,
+      }),
+      invalidatesTags: ['comments'],
+    }),
+  }),
+});
+export const {
+  useGetProductsQuery,
+  useSingleProductQuery,
+  usePostCommentMutation,
+  useGetCommentQuery,
+} = api;
+```
+##### উপরের কোড গুলোর মধ্যে নিচের ১. ২. ৩. এর মধ্যে tags add করা হয়েছে ।
+##### প্রধমে ১. নাম্বারের মধ্যে tags add করা হয়েছে যেমন :   tagTypes: ['comments'], । যেকোন নাম দেয়া যেতে পারে ।
+##### 2 .নাম্বারের মধ্যে নতুন যে ডাটা আসছে সেটা provide করছি । যেমন : providesTags: ['comments'],
+##### ৩. এখন কথা হচ্ছে কখন আমরা fetch করব ? যখন আমরা ডাটা post করব তখন সাথে সাথে get করব । 
+##### কিভাবে করব? জাস্ট postComment mutaion এর মধ্যে  invalidatesTags: ['comments'], এটা দিয়ে দিব । 
+#### এটা post হওয়ার সাথে সাথে get করছে , আমাদের কাছে মনে হচ্ছে এটা real time হচছে ।
+1. 
+```js
+  tagTypes: ['comments'],
+```
+2. 
+```js
+ getComment: builder.query({
+      query: (id) => `/comment/${id}`,
+      providesTags: ['comments'],
+    }),
+```
+3. 
+```js
+ postComment: builder.mutation({
+      query: ({ id, data }) => ({
+        url: `/comment/${id}`,
+        method: `POST`,
+        body: data,
+      }),
+      invalidatesTags: ['comments'],
+    }),
+```
+## Redux Refatching using Mount or arg change polling and code spliting
+##### মনে করেন , যখন আমরা অনেকজন কমেন্ট করব অথবা যখন আমরা postman থেকে comment করব তখন সাথে সাথে comment দেখাচ্ছে না । এজন্যে আমরা 
+##### ৩০ সেকেন্ড পর পর refatch করব । এজন্য আমাদের করতে হবে 
+##### ৩০ সেকেজঢ পর পর refech হবে , এগুলৈ সবquery তে দিতে পারব । 
+
+```js
+  const { data  } = useGetCommentQuery(id , {refetchOnMountOrArgChange : true , pollingInterval : 30000})
+
+```
+#### code splite করথ
+##### আমরা root api তে আমরা সব করতেছি যেহেতু এটা ছোট প্রতেক্ট । সেজন্য আমরা বড় প্রজেক্টের ক্ষেত্রে একটা root api বানাব
+##### এরপর product api , cart api বনায়ে main root এ inject করব । 
+#### এটা root api
+
+* redux 
+  * api
+    * apiSlice.tsx
+
+```js
+import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+
+export const api = createApi({
+  reducerPath: 'api',
+  baseQuery: fetchBaseQuery({ baseUrl: 'http://localhost:5000' }),
+  tagTypes: ['comments'],
+  endpoints: (builder) => ({}),
+});
+
+```
+* redux 
+  * feature
+    * cart
+      * cartApi.tsx
+    * product
+      * productApi
+in productApi.tsx
+##### এখানে আমরা কিছু দেয়নি । উপরের root api এর মাধ্যমে injectEndpoints কে কল করে আমরা 
+##### endpoint গুলে দিয়ে দিছি । আর productApi টা export করে দিছি ।
+##### এভাবে অনেকগুলা enpoint তৈরি করা যাবে ।
+```js
+import { api } from "@/redux/api/apISlice";
+
+const productApi = api.injectEndpoints({
+    endpoints: (builder) => ({
+
+        getProducts: builder.query({
+            query: () => '/products',
+          }),
+          singleProduct: builder.query({
+            query: (id) => `/product/${id}`,
+          }),
+          getComment: builder.query({
+            query: (id) => `/comment/${id}`,
+            providesTags: ['comments'],
+          }),
+          postComment: builder.mutation({
+            query: ({ id, data }) => ({
+              url: `/comment/${id}`,
+              method: `POST`,
+              body: data,
+            }),
+            invalidatesTags: ['comments'],
+          }),
+})
+})
+export const {
+    useGetProductsQuery,
+    useSingleProductQuery,
+    usePostCommentMutation,
+    useGetCommentQuery,
+  } = productApi;
+  
+```
+## Firebase install and setup
+
+প্রথমে firebase এ login করতে হবে । তারপর Get Started এ ক্লিক  করতে হবে ।
+#[https://console.firebase.google.com/](#https://console.firebase.google.com/)
+
+##### new project name দিতে হবে । 
+#####  তারপর add a project ক্লিক করতে হবে ।
+##### অথবা get started এ ক্লিক করে যেকোন project এ গিয়ে project overview তে গিয়ে project setting এ গিয়ে project configuration পাওয়া যাবে । 
+##### firebase configuration copy করে প্রজেক্টে বসাতে হবে । 
+### [প্রথমে firebase টা install করতে হবে](#create-redux-and-react-and-vite-project)
+##### copy the firebase project configurtion
+
 
 
 
